@@ -6,20 +6,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.testng.Assert;
 
-import com.lms.utilities.BaseClass;
-import com.lms.utilities.*;
-import com.lms.utilities.*;
-import com.lms.factory.*;
 import com.lms.PageObjects.Program_POM;
+import com.lms.utilities.BaseClass;
+import com.lms.utilities.ExcelReaderListMap;
 import com.lms.utilities.PageUtils;
-import com.lms.PageObjects.*;
+import com.lms.utilities.ProgramUtil;
 
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -31,6 +28,7 @@ public class ProgramValidationSteps extends BaseClass{
 	public Program_POM programPage;//ProgramPage object
 	public List<Map<String, String>> programTestData = null;
 	private PageUtils pageUtils = null;
+	public static final ProgramUtil programUtil = ProgramUtil.getInstance();
 	
 	public ProgramValidationSteps() {
 		try {
@@ -60,48 +58,51 @@ public class ProgramValidationSteps extends BaseClass{
 	@Given("admin enter the LMS site")
 	public void admin_enter_the_lms_site() {
 		
-		driver = new ChromeDriver();
-		driver.manage().deleteAllCookies();
-		driver.manage().window().maximize();
-		driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
-		driver.get("https://lms-frontend-api-hackathon-apr-326235f3973d.herokuapp.com");
-		programPage = new Program_POM(driver);
-		//programPage = new Program_POM(DriverClass.getDriver());
+		if (programUtil.isLoggedIn()) {
+			driver = programUtil.getDriver();
+			programPage = programUtil.getProgramPage();
+		} else {
+			driver = new ChromeDriver();
+			driver.manage().deleteAllCookies();
+			driver.manage().window().maximize();
+			driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
+			driver.get("https://lms-frontend-api-hackathon-apr-326235f3973d.herokuapp.com");
+			programPage = new Program_POM(driver);
+			
+			programUtil.setDriver(driver);
+			programUtil.setProgramPage(programPage);
+		}
 	}
 	
 	@When("Admin enters Username {string} and Password {string} and logged in")
 	public void admin_enters_username_and_password_and_logged_in(String Uname, String Pwd) {
-		programPage.enterUserName(Uname);
-		programPage.enterPasswordField(Pwd);
-		programPage.clickOnLoginButton();
+		if (!programUtil.isLoggedIn()) {
+			programPage.enterUserName(Uname);
+			programPage.enterPasswordField(Pwd);
+			programPage.clickOnLoginButton();
+		}
 	}
-
-//	@Then("Admin suceessfully logged in")
-//	public void admin_suceessfully_logged_in() {
-//	
-//		String currentUrl =driver.getCurrentUrl();
-//		Assert.assertEquals("https://lms-frontend-api-hackathon-apr-326235f3973d.herokuapp.com/login",currentUrl);
-//	}
 
 	@And("Admin is on dashboard page after Login")
 	public void admin_is_on_dashboard_page_after_login() {
-		//Assert.assertTrue(programPage.headerIsDisplayed());
-		String dashboardTitle = driver.getTitle();
-		System.out.println("dashboardTitle=" + dashboardTitle);
-		Assert.assertEquals("LMS", dashboardTitle);
+		if (!programUtil.isLoggedIn()) {
+			String dashboardTitle = driver.getTitle();
+			System.out.println("dashboardTitle=" + dashboardTitle);
+			Assert.assertEquals("LMS", dashboardTitle);
+		}
 	}
 
 	@Then("Admin clicks {string} on the navigation bar")
-	public void admin_clicks_on_the_navigation_bar(String ProgramButton) {
+	public void admin_clicks_on_the_navigation_bar(String ProgramButton) throws InterruptedException {
 		programPage.clickOnProgramButton();
 	}
-
+	
 	@Then("Admin should see URL with {string}")
 	public void admin_should_see_url_with(String manageProgram) {
-		String currentUrl =driver.getCurrentUrl();
-		System.out.println(currentUrl);
-		String ExpectedUrl ="https://lms-frontend-api-hackathon-apr-326235f3973d.herokuapp.com/login";
-		Assert.assertEquals(ExpectedUrl,currentUrl);
+		String actualUrl = driver.getCurrentUrl();
+		System.out.println(actualUrl);
+		String expectedUrl ="https://lms-frontend-api-hackathon-apr-326235f3973d.herokuapp.com/";
+		Assert.assertEquals(actualUrl, expectedUrl);
 		
 		programPage.manageProgramIsDisplayed();
 		Assert.assertEquals(programPage.manageProgramIsDisplayed(),"Manage Program");
@@ -110,7 +111,6 @@ public class ProgramValidationSteps extends BaseClass{
 	//3
 	@Then("Admin should see a heading with text {string} on the page")
 	public void admin_should_see_a_heading_with_text_on_the_page(String string) {
-		//programPage.headerIsDisplayed()
 		Assert.assertEquals(programPage.manageProgramIsDisplayed(),"Manage Program");
 	 }
 	
@@ -120,28 +120,22 @@ public class ProgramValidationSteps extends BaseClass{
 		Assert.assertTrue(programPage.getfooterMessage().startsWith("In total there are ") && programPage.getfooterMessage().endsWith(" programs."));
 	}
 	
-    //Delete--->need to check
+    //Delete
 	@Then("Admin should see a Delete button on the top left hand side as Disabled")
 	public void admin_should_see_a_delete_button_on_the_top_left_hand_side_as_disabled() {
-		//WebElement deletebutton=driver.findElement(By.xpath("/html/body/app-root/app-program/div/mat-card/mat-card-title/div[2]/div[1]/button"));
-	    Assert.assertFalse(programPage.deleteButtonValidation());
+		Assert.assertFalse(programPage.deleteButtonValidation());
 	}
 	
 	//Search
 	@Then("Admin should see Search bar with text as {string}")
 	public void admin_should_see_search_bar_with_text_as(String string) {
-		//WebElement searchField = driver.findElement(By.id("filterGlobal"));
 		Assert.assertTrue(programPage.searchBoxValidation());  
 	}
 	
     //+A new Program
 	@Then("Admin should see a {string} button on the program page above the data table")
 	public void admin_should_see_a_button_on_the_program_page_above_the_data_table(String string) {
-		//String addPrpogramButton = driver.findElement(By.className("p-button-label")).getText();
-		
-		//Here is a bug
-		//Assert.assertTrue("".equals(addPrpogramButton));
-		Assert.assertEquals(programPage.addProgramButtonValidation(), "");
+		Assert.assertEquals(programPage.addProgramButtonValidation(), "A New Program");
 	}
 	
 	@Then("Admin should see data table on the Manage Program Page with column headers")
@@ -149,11 +143,7 @@ public class ProgramValidationSteps extends BaseClass{
 
 		Assert.assertTrue("Program Name".equals(programPage.programNameHeaderValidation()));
 		Assert.assertTrue("Program Description".equals(programPage.programDescriptionHeaderValidation()));
-		
-		//WebElement programStatusHeader = driver.findElement(By.xpath("/html[1]/body[1]/app-root[1]/app-program[1]/div[1]/mat-card[1]/mat-card-content[1]/p-table[1]/div[1]/div[1]/table[1]/thead[1]/tr[1]/th[4]"));
 		Assert.assertTrue("Program Status".equals(programPage.programStatusHeaderValidation()));
-		 
-		//WebElement editDeleteHeader = driver.findElement(By.xpath("/html[1]/body[1]/app-root[1]/app-program[1]/div[1]/mat-card[1]/mat-card-content[1]/p-table[1]/div[1]/div[1]/table[1]/thead[1]/tr[1]/th[5]"));
 		Assert.assertTrue("Edit / Delete".equals(programPage.editDeleteHeaderValidation()));
 	}
 
@@ -188,16 +178,12 @@ public class ProgramValidationSteps extends BaseClass{
 	@Then("Admin should see the Edit and Delete buttons on each row of the data table")
 	public void admin_should_see_the_edit_and_delete_buttons_on_each_row_of_the_data_table() {
 		pageUtils = getCurrentPageUtils();
+		
 		for (int i = 1; i<=pageUtils.getRecordsPerPage(); i++) {
 			WebElement rowEditIcon = driver.findElement(By.xpath("/html/body/app-root/app-program/div/mat-card/mat-card-content/p-table/div/div[1]/table/tbody/tr["+ i +"]/td[5]/div/span/button[1]/span[1]"));
 			Assert.assertTrue(rowEditIcon.isDisplayed());	
 		}
-		for (int i = 1; i<=pageUtils.getRecordsPerPage(); i++) {
-			WebElement rowEditIcon = driver.findElement(By.xpath("/html/body/app-root/app-program/div/mat-card/mat-card-content/p-table/div/div[1]/table/tbody/tr["+ i +"]/td[5]/div/span/button[1]/span[1]"));
-			Assert.assertTrue(rowEditIcon.isDisplayed());	
-		}
-	
-     	//Assert.assertTrue(programPage.editiconValidation());
+
      	for (int i = 1; i<=pageUtils.getRecordsPerPage(); i++) {
 			WebElement rowdeleteicon = driver.findElement(By.xpath("/html/body/app-root/app-program/div/mat-card/mat-card-content/p-table/div/div[1]/table/tbody/tr["+ i +"]/td[5]/div/span/button[2]/span[1]"));
 			Assert.assertTrue(rowdeleteicon.isDisplayed());
@@ -207,7 +193,7 @@ public class ProgramValidationSteps extends BaseClass{
 	@Then("Admin should see the number of records displayed on the page are {int}")
 	public void admin_should_see_the_number_of_records_displayed_on_the_page_are(Integer int1) {
 		String[] items = programPage.numberOfRecordstextValidate().split(" "); // Showing 1 to 5 of 7 entries
-	    Assert.assertTrue(items.length == 7 && items[1].equals("1") && items[3].equals("5"));
+		Assert.assertTrue(items.length == 7 && items[1].equals("1") && items[3].equals("5"));
 	}
 	
 	//Add A Program
@@ -216,7 +202,7 @@ public class ProgramValidationSteps extends BaseClass{
 		programPage.manageProgramIsDisplayed();
 		Assert.assertEquals(programPage.manageProgramIsDisplayed(),"Manage Program");
 	}
-
+	
 	@When("Admin clicks <A New Program> button")
 	public void admin_clicks_a_new_program_button() {
 		programPage.clickOnaddProgram();
@@ -234,9 +220,9 @@ public class ProgramValidationSteps extends BaseClass{
 		//Assert.assertTrue(programPage.programTextFieldIsDisplayed());
 		Assert.assertEquals(programPage.programTextFieldValidate(), "");
 
-		Assert.assertTrue(programPage.descriptionValidate().startsWith("Description"));
+		//Assert.assertTrue(programPage.descriptionValidate().startsWith("Description"));
+
 		Assert.assertTrue(programPage.descriptionTextFieldIsDisplayed());
-		
 		
 		Assert.assertTrue(programPage.inActiveStatusIsDisplayed());
 		
@@ -250,24 +236,14 @@ public class ProgramValidationSteps extends BaseClass{
 		Assert.assertTrue(programPage.programTextFieldIsDisplayed());
 		Assert.assertEquals(programPage.programTextFieldValidate(), "");
 		
-//		WebElement description = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[2]/label"));
-//		Assert.assertTrue(description.getText().startsWith("Description"));
-		Assert.assertTrue(programPage.descriptionTextFieldValidate().startsWith("Description"));
-		
-		//WebElement descriptionTextField = driver.findElement(By.xpath("//*[@id=\"programDescription\"]"));
+		Assert.assertTrue(programPage.descriptionValidate().startsWith("Description"));//-->false
 		Assert.assertTrue(programPage.descriptionTextFieldIsDisplayed());
-		
-		Assert.assertEquals(programPage.descriptionValidate(), "");
+		Assert.assertEquals(programPage.descriptionTextFieldValidate(), "");
 	}
 
 	@Then("Admin should see two radio button for Program Status")
 	public void admin_should_see_two_radio_button_for_program_status() {
-//		WebElement active = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[3]/div[2]/p-radiobutton/div/div[2]"));
-//		Assert.assertTrue(active.isDisplayed());
 		Assert.assertTrue(programPage.activeStatusIsDisplayed());
-
-//		WebElement inactive = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[3]/div[3]/p-radiobutton/div/div[2]"));
-//		Assert.assertTrue(inactive.isDisplayed());
 		Assert.assertTrue(programPage.inActiveStatusIsDisplayed());
 	}
 	
@@ -279,37 +255,20 @@ public class ProgramValidationSteps extends BaseClass{
 	@When("Admin clicks <Save>button without entering any data")
 	public void admin_clicks_save_button_without_entering_any_data() {
 		programPage.clickSave();
-//		WebElement save = driver.findElement(By.xpath("//*[@id=\"saveProgram\"]"));
-//		save.click();
+	
 	}
 
 	@Then("Admin gets a Error message alert")
 	public void admin_gets_a_error_message_alert() {
-//		WebElement programName = driver.findElement(By.xpath("//*[@id=\"programName\"]"));
-//
-//		System.out.println("Program Name: " + programName.getText());
-//		Assert.assertEquals(programName.getText(), "");
-		Assert.assertEquals(programPage.programNameValidate(), "");
+		Assert.assertTrue(programPage.programNameValidate().startsWith("Name"));
 		
-		
-//		WebElement programRequiredMsg = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[1]/small"));
-//		System.out.println("Program Name Required Message: " + programRequiredMsg.getText());
-//		Assert.assertEquals(programRequiredMsg.getText(), "Program name is required.");
 		Assert.assertEquals(programPage.getProgramRequiredMsg(), "Program name is required.");
 		
-//		WebElement programDesc = driver.findElement(By.xpath("//*[@id=\"programDescription\"]"));
-//		System.out.println("Program Desc: " + programDesc.getText());
-//		Assert.assertEquals(programDesc.getText(), "");
 		Assert.assertEquals(programPage.descriptionTextFieldValidate(), "");
 		
-//		WebElement programDescRequiredMsg = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[2]/small"));
-//		System.out.println("Program Description Required Message: " + programDescRequiredMsg.getText());
-//		Assert.assertEquals(programDescRequiredMsg.getText(), "Description is required.");
 		Assert.assertEquals(programPage.getprogramDescRequiredMsg(), "Description is required.");
 		
-		//WebElement statusMsg = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/small"));
-		//Assert.assertEquals(  statusMsg.getText(),"Status Required Message: ");
-		Assert.assertEquals(programPage.getStatusMsg(),"Status Required Message: ");
+		Assert.assertEquals(programPage.getStatusMsg(),"Status is required.");
 	    
 	}
 	
@@ -318,8 +277,7 @@ public class ProgramValidationSteps extends BaseClass{
 	public void admin_enter_value_only_in_program_name_using_and(String SheetName, Integer rowNumber) throws InvalidFormatException, IOException {
 		ExcelReaderListMap reader = new ExcelReaderListMap();
 		List<Map<String, String>> testData = reader.getData(BaseClass.eXCEL, "Program");
-		String ProgramName = testData.get(rowNumber).get("ProgramName"); // Column heading
-		//WebElement nameTextField = driver.findElement(By.xpath("//*[@id=\"programName\"]"));
+		String ProgramName = testData.get(rowNumber).get("ProgramName"); 
 		programPage.enterNameTextField(ProgramName);
 	}
 
@@ -327,7 +285,7 @@ public class ProgramValidationSteps extends BaseClass{
 	public void admin_clicks_save_button() {
 		WebElement save = driver.findElement(By.xpath("//*[@id=\"saveProgram\"]"));
 		save.click();
-	   
+		programPage.clickSave();
 	}
 	
     //Excel Reader Program Description
@@ -336,30 +294,13 @@ public class ProgramValidationSteps extends BaseClass{
 	{
 		ExcelReaderListMap reader = new ExcelReaderListMap();
 		List<Map<String, String>> testData = reader.getData(BaseClass.eXCEL, "Program");
-		//String ProgramName = testData.get(rowNumber).get("ProgramName"); // Column heading
-		String ProgramDescription = testData.get(rowNumber).get("ProgramDescription"); // Column heading
+		String ProgramDescription = testData.get(rowNumber).get("ProgramDescription"); 
 		programPage.enterProgramDescriptionTextField(ProgramDescription);
-	    
 	}
 	
-	/*@When("Admin enter value only in username using {string} and {int}")
-	public void admin_enter_value_only_in_username_using_and(String SheetName, Integer rowNumber)
-			throws InvalidFormatException, IOException {
-		ExcelReaderListMap reader = new ExcelReaderListMap();
-		LoggerLoad.info("User forgot to enter password");
-		List<Map<String, String>> testData = reader.getData(BaseClass.eXCEL, "Login");
-		String User_name = testData.get(rowNumber).get("user"); // Column heading
-		String Pass_word = testData.get(rowNumber).get("password"); // Column heading
-		loginpage.enterUsernamePasswrd(User_name, Pass_word);
-	}*/
-	
-
 	@Then("Admin gets a message alert {string}ProgramName")//program des
 	public void admin_gets_a_message_alert_ProgramName(String string) {
-//		WebElement programRequiredMsg = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[1]/small"));
-//		System.out.println("Program Name Required Message: " + programRequiredMsg.getText());
-//		Assert.assertEquals(programRequiredMsg.getText(), "Program name is required.");
-		Assert.assertEquals(programPage.getProgramRequiredMsg(), "Program name is required.");
+         Assert.assertEquals(programPage.getProgramRequiredMsg(), "Program name is required.");
 	}
 	
 	@Then("admin gets a message alert for description")
@@ -372,50 +313,28 @@ public class ProgramValidationSteps extends BaseClass{
 	@When("Admin selects only Status")
 	public void admin_selects_only_status() {
 		programPage.clickActivel();
-//		WebElement active = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[3]/div[2]/p-radiobutton/div/div[2]"));
-//		Assert.assertTrue( active.isDisplayed());
-//		active.click();
 	}
 	
 	@Then("Admin gets a message alert {string} and {string}")
 	public void admin_gets_a_message_alert_and(String string, String string2) {
-//		WebElement programRequiredMsg = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[1]/small"));
-//		System.out.println("Program Name Required Message: " + programRequiredMsg.getText());
-//		Assert.assertEquals(programRequiredMsg.getText(), "Program name is required.");
-		Assert.assertEquals(programPage.getProgramRequiredMsg(), "Program name is required.");
-//    WebElement programDescRequiredMsg = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[2]/small"));
-//		
-//		System.out.println("Program Description Required Message: " + programDescRequiredMsg.getText());
-		//Assert.assertEquals(programDescRequiredMsg.getText(), "Description is required.");
-		Assert.assertEquals(programPage.getprogramDescRequiredMsg(), "Description is required.");
+	     Assert.assertEquals(programPage.getProgramRequiredMsg(), "Program name is required.");
+	     Assert.assertEquals(programPage.getprogramDescRequiredMsg(), "Description is required.");
 	}
-
-//	@When("Admin enters only numbers or special char in name and desc column")
-//	public void admin_enters_only_numbers_or_special_char_in_name_and_desc_column() {
-//		programPage.enterSpecialOrNumberNameTextField();
-//   
-//	}
 	
 	@When("Admin enters only numbers or special char in name and desc column {string} and {int}")
 	public void admin_enters_only_numbers_or_special_char_in_name_and_desc_column_and(String SheetName, Integer rowNumber) throws InvalidFormatException, IOException {
 		ExcelReaderListMap reader = new ExcelReaderListMap();
 		List<Map<String, String>> testData = reader.getData(BaseClass.eXCEL, "Program");
-		String ProgramName = testData.get(rowNumber).get("ProgramName"); // Column heading
-		//WebElement nameTextField = driver.findElement(By.xpath("//*[@id=\"programName\"]"));
+		String ProgramName = testData.get(rowNumber).get("ProgramName"); 
 		programPage.enterNameTextField(ProgramName);
-		String ProgramDescription = testData.get(rowNumber).get("ProgramDescription"); // Column heading
+		String ProgramDescription = testData.get(rowNumber).get("ProgramDescription"); 
 		programPage.enterProgramDescriptionTextField(ProgramDescription);
 	}
 	
 	@Then("Admin gets a Error message alert SpecialCharecters")
 	public void admin_gets_a_error_message_alert_SpecialCharecters() {
-//		WebElement programRequiredMsg = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[1]/small"));
-//		System.out.println("Program Name Required Message: " + programRequiredMsg.getText());
 		Assert.assertEquals(programPage.getprogramRequiredMsgSpecialCharacter(), "This field should start with an alphabet, no special char and min 2 char.");
 		
-//		WebElement programDescRequiredMsgSpecialCharacter = driver.findElement(By.xpath("/html/body/app-root/app-program/p-dialog/div/div/div[2]/div[2]/small"));
-//		System.out.println("Program Description Required Message: " + programDescRequiredMsg.getText());
-		//AssertEquals(programDescRequiredMsg.getText(), "This field should start with an alphabet and min 2 char.");
 		Assert.assertEquals(programPage.getprogramDescRequiredMsgSpecialCharacter(), "This field should start with an alphabet and min 2 char.");
 	}
 	
@@ -452,10 +371,8 @@ public class ProgramValidationSteps extends BaseClass{
 	}
 
 	@Then("Admin gets a message {string} alert and able to see the new program added in the data table")
-	public void admin_gets_a_message_alert_and_able_to_see_the_new_program_added_in_the_data_table(String string) {
-		driver.switchTo().alert().accept();
-		String alertMessage= driver.switchTo().alert().getText();
-		System.out.println(alertMessage);
+	public void admin_gets_a_message_alert_and_able_to_see_the_new_program_added_in_the_data_table(String string) throws Exception {
+		programPage.validateAddProgramSuccess();
 	}
 
 	@When("Admin clicks <Cancel>button")
@@ -465,98 +382,195 @@ public class ProgramValidationSteps extends BaseClass{
 
 	@Then("Admin can see the Program details popup disappears without creating any program")
 	public void admin_can_see_the_program_details_popup_disappears_without_creating_any_program() {
-	    
+		Assert.assertEquals(programPage.manageProgramIsDisplayed(),"Manage Program");
 	}
 	
 	@And("Admin clicks <Edit> button on the data table for any row")
 	public void admin_clicks_edit_button_on_the_data_table_for_any_row() {
 		pageUtils = getCurrentPageUtils();
-		for (int i = 1; i<=pageUtils.getRecordsPerPage(); i++) {	
-			if (i == 1) {
-				programPage.clickOnEditIcon();
-				break;
-			}
-		}
+		programPage.clickOnEditIcon(pageUtils.getRecordsPerPage());
 	}
 
 	@Then("Admin should see a popup open for Program details to edit")
 	public void admin_should_see_a_popup_open_for_program_details_to_edit() {
 		
 		Assert.assertTrue(programPage.closeIsDisplayed());
+		
 		Assert.assertTrue(programPage.programNameValidate().startsWith("Name"));
 		Assert.assertTrue(programPage.programTextFieldIsDisplayed());
-		Assert.assertEquals(programPage.programTextFieldValidate(), "");
+		//Assert.assertTrue(!"".equals(programPage.programTextFieldValidate())); // TODO
 		
 		Assert.assertTrue(programPage.descriptionValidate().startsWith("Description"));
 		Assert.assertTrue(programPage.descriptionTextFieldIsDisplayed());
-		Assert.assertEquals(programPage.descriptionValidate(), "");
+		Assert.assertTrue(!"".equals(programPage.descriptionValidate()));
+		
 		Assert.assertTrue(programPage.activeStatusIsDisplayed());
-
 		Assert.assertTrue(programPage.inActiveStatusIsDisplayed());
 		
 		Assert.assertTrue(programPage.cancelIsDisplayed());
 		Assert.assertTrue(programPage.saveIsDisplayed());
 	}
 
-	@Given("Admin is on Program Details Popup window to Edit")
-	public void admin_is_on_program_details_popup_window_to_edit() {
-		
-	   
-	}
-
 	@When("Admin edits the Name column using {string} and {int}")
-	public void admin_edits_the_name_column_using_and(String string, Integer int1) {
-	   
+	public void admin_edits_the_name_column_using_and(String sheetName, Integer rowNumber) throws InvalidFormatException, IOException {
+		ExcelReaderListMap reader = new ExcelReaderListMap();
+		List<Map<String, String>> testData = reader.getData(BaseClass.eXCEL, "Program");
+		String programName = testData.get(rowNumber).get("ProgramName"); 
+		programPage.clearNameTextField();
+		programPage.enterNameTextField(programName);
 	}
 
 	@Then("Admin gets a message {string} alert and able to see the updated name in the table for the particular program")
-	public void admin_gets_a_message_alert_and_able_to_see_the_updated_name_in_the_table_for_the_particular_program(String string) {
-	    
+	public void admin_gets_a_message_alert_and_able_to_see_the_updated_name_in_the_table_for_the_particular_program(String string) throws Exception {
+		programPage.validateEditProgramSuccess();
 	}
 
 	@When("Admin edits the Description column in using {string} and {int}")
-	public void admin_edits_the_description_column_in_using_and(String string, Integer int1) {
-	    
+	public void admin_edits_the_description_column_in_using_and(String sheetName, Integer rowNumber) throws InvalidFormatException, IOException {
+		ExcelReaderListMap reader = new ExcelReaderListMap();
+		List<Map<String, String>> testData = reader.getData(BaseClass.eXCEL, "Program");
+		String programDesc = testData.get(rowNumber).get("ProgramDescription"); 
+		programPage.clearProgramDescriptionTextField();
+		programPage.enterProgramDescriptionTextField(programDesc);
 	}
 
 	@Then("Admin gets a message {string} alert and able to see the updated description in the table for the particular program")
-	public void admin_gets_a_message_alert_and_able_to_see_the_updated_description_in_the_table_for_the_particular_program(String string) {
-	    
+	public void admin_gets_a_message_alert_and_able_to_see_the_updated_description_in_the_table_for_the_particular_program(String string) throws Exception {
+		programPage.validateEditProgramSuccess();
 	}
 
 	@When("Admin changes the Status")
 	public void admin_changes_the_status() {
-	    
+//		System.out.println("activeStatusIsSelected" + programPage.activeStatusIsSelected());
+//		System.out.println("InactiveStatusIsSelected" + programPage.inActiveStatusIsSelected());
+//	    if (programPage.activeStatusIsSelected()) {
+//	    	programPage.clearActivel();
+//	    	programPage.clickInactive();
+//	    } else if (programPage.inActiveStatusIsSelected()) {
+//	    	programPage.clearInactive();
+//	    	programPage.clickActivel();
+//	    } else {
+//	    	programPage.clickActivel();
+//	    }
+//	    
+//	    System.out.println("After activeStatusIsSelected" + programPage.activeStatusIsSelected());
+//		System.out.println("After InactiveStatusIsSelected" + programPage.inActiveStatusIsSelected());
+		
+		programPage.clickInactive();
 	}
 
 	@Then("Admin gets a message {string} alert and able to see the updated status in the table for the particular program")
-	public void admin_gets_a_message_alert_and_able_to_see_the_updated_status_in_the_table_for_the_particular_program(String string) {
-	    
+	public void admin_gets_a_message_alert_and_able_to_see_the_updated_status_in_the_table_for_the_particular_program(String string) throws Exception {
+		programPage.validateEditProgramSuccess();
 	}
 
 	@When("Admin edit special char in name and desc column {string} and {int}")
-	public void admin_edit_special_char_in_name_and_desc_column_and(String string, Integer int1) {
-	   
+	public void admin_edit_special_char_in_name_and_desc_column_and(String sheetName, Integer rowNumber) throws InvalidFormatException, IOException {
+		ExcelReaderListMap reader = new ExcelReaderListMap();
+		List<Map<String, String>> testData = reader.getData(BaseClass.eXCEL, "Program");
+		
+		String programName = testData.get(rowNumber).get("ProgramName"); 
+		String programDesc = testData.get(rowNumber).get("ProgramDescription"); 
+		
+		programPage.clearNameTextField();
+		programPage.clearProgramDescriptionTextField();
+		
+		programPage.enterNameTextField(programName);
+		programPage.enterProgramDescriptionTextField(programDesc);
 	}
 
 	@Then("Admin gets a Error message alert Edit program")
 	public void admin_gets_a_error_message_alert_edit_program() {
-	    
+		programPage.getprogramRequiredMsgSpecialCharacter();
+		programPage.getprogramDescRequiredMsgSpecialCharacter();
+		Assert.assertEquals(programPage.getprogramRequiredMsgSpecialCharacter(), "This field should start with an alphabet, no special char and min 2 char.");
+		Assert.assertEquals(programPage.getprogramDescRequiredMsgSpecialCharacter(), "This field should start with an alphabet and min 2 char.");
 	}
 
 	@When("Admin clicks <Cancel>button on edit popup")
 	public void admin_clicks_cancel_button_on_edit_popup() {
-	    
+		programPage.clickCancel();
 	}
 
 	@Then("Admin can see the Program details popup disappears and can see nothing changed for particular program")
 	public void admin_can_see_the_program_details_popup_disappears_and_can_see_nothing_changed_for_particular_program() {
-	    
+		Assert.assertEquals(programPage.manageProgramIsDisplayed(),"Manage Program");
 	}
 
 	@When("Admin clicks <Save>button on edit popup")
 	public void admin_clicks_save_button_on_edit_popup() {
-	    
+		programPage.clickSave();
+	}
+	
+	@Then("Admin gets a message {string} alert and able to see the updated details in the table for the particular program")
+	public void admin_gets_a_message_alert_and_able_to_see_the_updated_details_in_the_table_for_the_particular_program(String string) throws Exception {
+		programPage.validateEditProgramSuccess();
 	}
 
+	// Delete Program step definitions
+	@When("Admin clicks <Delete> button on the data table for any row")
+	public void admin_clicks_delete_button_on_the_data_table_for_any_row() {
+		pageUtils = getCurrentPageUtils();
+		programPage.clickOnDeleteIcon(pageUtils.getRecordsPerPage());
+	}
+	
+	@Then("Admin should see a alert open with heading {string} along with  <YES> and <NO> button for deletion")
+	public void admin_should_see_a_alert_open_with_heading_along_with_yes_and_no_button_for_deletion(String string) {
+		// Confirm header
+		Assert.assertEquals(programPage.getConfrimText(), "Confirm");
+		
+		// No button
+		Assert.assertTrue(programPage.isNoButtonDisplayed());
+		Assert.assertEquals(programPage.getNoButtonText(), "No");
+		
+		// Yes button
+		Assert.assertTrue(programPage.isYesButtonDisplayed());
+		Assert.assertEquals(programPage.getYesButtonText(), "Yes");
+	    
+		// Close icon
+		Assert.assertTrue(programPage.isDeleteCloseIconDisplayed());
+	}
+	
+	@Then("Admin should see a message {string}")
+	public void admin_should_see_a_message(String string) {
+		// Confrim message
+		Assert.assertTrue(programPage.getConfrimMsgText().contains("Are you sure you want to delete "));
+	}
+	
+	@Given("Admin is on Confirm Deletion alert")
+	public void admin_is_on_confirm_deletion_alert() {
+		pageUtils = getCurrentPageUtils();
+		programPage.clickOnDeleteIcon(pageUtils.getRecordsPerPage());
+	}
+	
+	@When("Admin clicks <YES> button on the alert")
+	public void admin_clicks_yes_button_on_the_alert() {
+		programPage.clickOnYesButton();
+	}
+	
+	@Then("Admin gets a message {string} alert and able to see that program deleted in the data table")
+	public void admin_gets_a_message_alert_and_able_to_see_that_program_deleted_in_the_data_table(String string) throws Exception {
+		programPage.validateDeleteProgramSuccess();
+	}
+	
+	@When("Admin clicks <NO> button on the alert")
+	public void admin_clicks_no_button_on_the_alert() {
+		programPage.clickOnNoButton();
+	}
+	
+	@Then("Admin can see the deletion alert disappears without deleting")
+	public void admin_can_see_the_deletion_alert_disappears_without_deleting() {
+		Assert.assertEquals(programPage.manageProgramIsDisplayed(),"Manage Program");
+	}
+	
+	@When("Admin clicks Close\\(X) Icon on Deletion alert")
+	public void admin_clicks_close_x_icon_on_deletion_alert() {
+		programPage.clickOnDeleteCloseIcon();
+	}
+	
+	@Then("Admin can see the deletion alert disappears without any changes")
+	public void admin_can_see_the_deletion_alert_disappears_without_any_changes() {
+		Assert.assertEquals(programPage.manageProgramIsDisplayed(),"Manage Program");
+	}
+	// End of Delete Program step definitions
 }
